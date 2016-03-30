@@ -40,6 +40,10 @@ public class HazelcastBenchmarkArguments {
     private boolean syncBackups;
 
     /** */
+    @Parameter(names = {"-rb", "--readBackups"}, description = "Read backups")
+    private boolean readBackups = false;
+
+    /** */
     @Parameter(names = {"-cm", "--clientMode"}, description = "Client mode")
     private boolean clientMode;
 
@@ -48,8 +52,8 @@ public class HazelcastBenchmarkArguments {
     private int range = 1_000_000;
 
     /** */
-    @Parameter(names = {"-rb", "--readBackups"}, description = "Read backups")
-    private boolean readBackups = false;
+    @Parameter(names = {"-vs", "--valueSize"}, description = "Size of the byte[] in the SampleValue class")
+    private int valueSize = 1;
 
     /** */
     @Parameter(names = {"-bs", "--batchSize"}, description = "Batch size")
@@ -111,6 +115,13 @@ public class HazelcastBenchmarkArguments {
      */
     public int range() {
         return range;
+    }
+
+    /**
+     * @return Size of the byte[] in the SampleValue class.
+     */
+    public int valueSize() {
+        return valueSize;
     }
 
     /**

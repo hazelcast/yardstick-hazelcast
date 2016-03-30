@@ -23,13 +23,13 @@ import java.io.*;
 /**
  * Entity class for benchmark.
  */
-public class SampleValue implements IdentifiedDataSerializable{
+public class SampleValue implements IdentifiedDataSerializable {
     /** */
     private int id;
 
-    public static int sampleValueSize=1;
-    private byte[] value = new byte[sampleValueSize];
+    static int sampleValueSize = 1;
 
+    private byte[] value = new byte[sampleValueSize];
 
     /** */
     public SampleValue() {
@@ -49,8 +49,6 @@ public class SampleValue implements IdentifiedDataSerializable{
     public int id() {
         return id;
     }
-
-
 
     /** {@inheritDoc} */
     @Override public String toString() {
