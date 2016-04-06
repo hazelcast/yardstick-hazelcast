@@ -43,11 +43,11 @@ public class HazelcastPutAllPreparedBenchmark extends HazelcastAbstractMapBenchm
 
         for (int i = 0; i < PREPARED_MAPS_COUNT; i++) {
             SortedMap<Integer, Integer> valueMap = new TreeMap<>();
-            do {
+            for (int j = 0; j < args.batch(); j++) {
                 int key = nextRandom(args.range());
 
                 valueMap.put(key, key);
-            } while (valueMap.size() < args.batch());
+            }
             maps.add(valueMap);
         }
         mapsSize = maps.size();
