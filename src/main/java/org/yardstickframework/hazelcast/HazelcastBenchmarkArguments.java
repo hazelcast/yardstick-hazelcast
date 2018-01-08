@@ -44,8 +44,8 @@ public class HazelcastBenchmarkArguments {
     private boolean readBackups = false;
 
     /** */
-    @Parameter(names = {"-cm", "--clientMode"}, description = "Client mode")
-    private boolean clientMode;
+    @Parameter(names = {"-nt", "--nodeType"}, description = "Node type")
+    private NodeType nodeType = NodeType.SERVER;
 
     /** */
     @Parameter(names = {"-r", "--range"}, description = "Key range")
@@ -83,10 +83,10 @@ public class HazelcastBenchmarkArguments {
     }
 
     /**
-     * @return Client mode.
+     * @return Node type.
      */
-    public boolean clientMode() {
-        return clientMode;
+    public NodeType nodeType() {
+        return nodeType;
     }
 
     /**
@@ -177,7 +177,7 @@ public class HazelcastBenchmarkArguments {
      * @return Description.
      */
     public String description() {
-        return "-nn=" + nodes + "-b=" + backups + "-sb=" + syncBackups + "-cm=" + clientMode + "-rb=" + readBackups;
+        return "-nn=" + nodes + "-b=" + backups + "-sb=" + syncBackups + "-nt=" + nodeType.name() + "-rb=" + readBackups;
     }
 
     /** {@inheritDoc} */
@@ -188,7 +188,7 @@ public class HazelcastBenchmarkArguments {
             ", hzConfig='" + hzCfg + '\'' +
             ", hzClientCfg='" + hzClientCfg + '\'' +
             ", syncBackups=" + syncBackups +
-            ", clientMode=" + clientMode +
+            ", nodeType=" + nodeType.name() +
             ", range=" + range +
             ']';
     }

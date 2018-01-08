@@ -14,23 +14,15 @@
 
 package org.yardstickframework.hazelcast;
 
-import com.hazelcast.cache.impl.HazelcastServerCachingProvider;
-import com.hazelcast.client.HazelcastClient;
-import com.hazelcast.client.cache.impl.HazelcastClientCachingProvider;
+import com.hazelcast.client.*;
+import com.hazelcast.config.CacheSimpleConfig;
 import com.hazelcast.core.*;
-import com.hazelcast.instance.HazelcastInstanceProxy;
-import org.yardstickframework.BenchmarkConfiguration;
-import org.yardstickframework.BenchmarkDriverAdapter;
-import org.yardstickframework.BenchmarkUtils;
+import org.yardstickframework.*;
 
-import javax.cache.CacheManager;
-import javax.cache.spi.CachingProvider;
-import java.util.Collection;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.*;
+import java.util.concurrent.*;
 
-import static org.yardstickframework.BenchmarkUtils.jcommander;
-import static org.yardstickframework.BenchmarkUtils.println;
+import static org.yardstickframework.BenchmarkUtils.*;
 
 /**
  * Abstract class for Hazelcast benchmarks.
@@ -45,6 +37,12 @@ public abstract class HazelcastAbstractBenchmark extends BenchmarkDriverAdapter 
     /** Node. */
     private HazelcastNode node;
 
+    /** Map. */
+    protected IMap<Object, Object> map;
+
+    /**
+     * @param cacheName Cache name.
+     */
     protected HazelcastAbstractBenchmark(String cacheName) {
         this.cacheName = cacheName;
     }
@@ -55,27 +53,29 @@ public abstract class HazelcastAbstractBenchmark extends BenchmarkDriverAdapter 
 
         jcommander(cfg.commandLineArguments(), args, "<hazelcast-driver>");
 
-        SampleValue.sampleValueSize = args.valueSize();
-
-        HazelcastInstance instance = startedInstance(args.clientMode());
+        HazelcastInstance instance = startedInstance(args.nodeType());
 
         if (instance == null) {
-            node = new HazelcastNode(args.clientMode());
+            node = new HazelcastNode(args.nodeType());
 
             node.start(cfg);
-        } else {
-            node = new HazelcastNode(args.clientMode(), instance);
         }
+        else
+            node = new HazelcastNode(args.nodeType(), instance);
 
         waitForNodes();
+
+        map = node.hazelcast().getMap(cacheName);
+
+        assert map != null;
     }
 
     /**
-     * @param clientMode Client mode.
+     * @param nodeType Node type.
      * @return Started instance.
      */
-    private static HazelcastInstance startedInstance(boolean clientMode) {
-        Collection<HazelcastInstance> col = clientMode ? HazelcastClient.getAllHazelcastClients() :
+    private static HazelcastInstance startedInstance(NodeType nodeType) {
+        Collection<HazelcastInstance> col = nodeType == NodeType.CLIENT ? HazelcastClient.getAllHazelcastClients() :
             Hazelcast.getAllHazelcastInstances();
 
         return col == null || col.isEmpty() ? null : col.iterator().next();
@@ -83,6 +83,8 @@ public abstract class HazelcastAbstractBenchmark extends BenchmarkDriverAdapter 
 
     /** {@inheritDoc} */
     @Override public void tearDown() throws Exception {
+        map.clear();
+
         if (node != null)
             node.stop();
     }
@@ -129,7 +131,7 @@ public abstract class HazelcastAbstractBenchmark extends BenchmarkDriverAdapter 
         });
 
         if (!nodesStarted()) {
-            println(cfg, "Waiting for " + (args.nodes() - 1) + " nodes to start...");
+            println(cfg, "Waiting for " + args.nodes() + " nodes to start...");
 
             nodesStartedLatch.await();
         }
@@ -139,9 +141,21 @@ public abstract class HazelcastAbstractBenchmark extends BenchmarkDriverAdapter 
      * @return {@code True} if all nodes are started, {@code false} otherwise.
      */
     private boolean nodesStarted() {
-        int rmtNodeCnt = args.clientMode() ? args.nodes() - 1 : args.nodes();
+        return numFullNodes() >= args.nodes();
+    }
 
-        return hazelcast().getCluster().getMembers().size() >= rmtNodeCnt;
+    /**
+     * @return number of non-lite members in cluster.
+     */
+    private int numFullNodes() {
+        int n = 0;
+
+        for (Member node : hazelcast().getCluster().getMembers()) {
+            if (!node.isLiteMember())
+                n++;
+        }
+
+        return n;
     }
 
     /**
@@ -160,23 +174,4 @@ public abstract class HazelcastAbstractBenchmark extends BenchmarkDriverAdapter 
     protected int nextRandom(int min, int max) {
         return ThreadLocalRandom.current().nextInt(max - min) + min;
     }
-
-
-    public static boolean isMember(HazelcastInstance instance) {
-        return instance instanceof HazelcastInstanceProxy;
-    }
-    public static boolean isClient(HazelcastInstance instance) {
-        return ! isMember(instance);
-    }
-
-    public static CacheManager getCacheManager(HazelcastInstance instance){
-        CachingProvider provider;
-        if (isMember(instance)) {
-            provider = HazelcastServerCachingProvider.createCachingProvider(instance);
-        } else {
-            provider = HazelcastClientCachingProvider.createCachingProvider(instance);
-        }
-        return provider.getCacheManager(provider.getDefaultURI(),provider.getDefaultClassLoader(), null);
-    }
-
 }
